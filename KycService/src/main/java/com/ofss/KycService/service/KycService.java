@@ -9,4 +9,5 @@ public interface KycService {
     String viewAllImagesAndUpdateStatus(Long CustomerId, String status,Long verifierId);
     ResponseEntity<ResponseDTO> updateKYC(KycRequestDTO requestDTO, Long id);
     String deleteKyc(Long id, Long verifierId);
+    ResponseEntity<ResponseDTO> userViewKycStatus(Long id);
 }

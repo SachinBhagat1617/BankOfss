@@ -10,5 +10,4 @@ public class ResponseDTO {
     private Integer statusCode;
     private Boolean success;
     private Object data;
-
 }

@@ -7,7 +7,7 @@ spring:
     config:
       server:
         git:
-          uri: https://github.com/SachinBhagat1617/OfssBankConfig
+          uri: https://github.com/SachinBhagat1617/BankConfig
           username: ${USERNAME}
           password: ${PASSWORD}
 

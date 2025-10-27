@@ -116,7 +116,12 @@ public class AccountServiceImpl implements AccountService {
     public ResponseEntity<ResponseDTO> addBalance(Long accountId, Double amount) {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new ResourceNotFoundException("Account", "ID", accountId.toString()));
-
+        if(account.getAccountStatus()==AccountStatus.CLOSED){
+            throw new APIException("Cannot credit balance from a closed account", HttpStatus.BAD_REQUEST);
+        }
+        if (account.getAccountStatus()==AccountStatus.INACTIVE){
+            throw new APIException("Cannot credit balance from a INACTIVE account", HttpStatus.BAD_REQUEST);
+        }
         if (amount <= 0) {
             throw new APIException("Amount must be greater than zero", HttpStatus.BAD_REQUEST);
         }
@@ -138,6 +143,13 @@ public class AccountServiceImpl implements AccountService {
     public ResponseEntity<ResponseDTO> deductBalance(Long accountId, Double amount) {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new ResourceNotFoundException("Account", "ID", accountId.toString()));
+        if(account.getAccountStatus()==AccountStatus.CLOSED){
+            throw new APIException("Cannot deduct balance from a closed account", HttpStatus.BAD_REQUEST);
+        }
+        if (account.getAccountStatus()==AccountStatus.INACTIVE){
+            throw new APIException("Cannot deduct balance from a INACTIVE account", HttpStatus.BAD_REQUEST);
+        }
+
 
         if (amount <= 0) {
             throw new APIException("Amount must be greater than zero", HttpStatus.BAD_REQUEST);

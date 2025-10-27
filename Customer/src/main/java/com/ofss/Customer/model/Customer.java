@@ -57,7 +57,20 @@ public class Customer {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt=LocalDateTime.now();
 
+    @Pattern(regexp = "^[0-9]{12}$", message = "Aadhaar number must be exactly 12 digits")
+    @Column(name = "aadhaar_number", length = 12, unique = true)
+    private String aadhaarNumber;
+
+    @Pattern(regexp = "^[A-Z]{5}[0-9]{4}[A-Z]{1}$", message = "Invalid PAN format (e.g., ABCDE1234F)")
+    @Column(name = "pan_number", length = 10, unique = true)
+    private String panNumber;
+
+    @Column(name = "is_deleted")
+    private boolean inActive=false;
+
     @Column(name = "updated_at")
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+
 }

@@ -371,4 +371,13 @@ public class KycController {
                 .data(null)
                 .build());
     }
+    @GetMapping("/status/id/{id}")
+    @Operation(
+            summary = "View KYC status",
+            description = "Allows a user to view the current status of their KYC verification."
+    )
+    public ResponseEntity<ResponseDTO> userViewKycStatus(@PathVariable Long id) {
+        return kycService.userViewKycStatus(id);
+    }
+
 }

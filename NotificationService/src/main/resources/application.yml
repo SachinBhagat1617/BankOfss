@@ -1,29 +1,31 @@
 spring:
   application:
     name: NotificationService
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${SPRING_MAIL_USERNAME}
-    password: ${SPRING_MAIL_PASSWORD}
-    properties:
-      mail.smtp.auth: true
-      mail.smtp.starttls.enable: true
-      mail.smtp.starttls.required: true
-      mail.smtp.ssl.trust: smtp.gmail.com
-    default-encoding: UTF-8
-
-  kafka:
-    consumer:
-      bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
-      group-id: email-service
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
-      properties:
-        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
-        spring.json.value.default.type: com.ofss.NotificationService.dto.EmailEventDTO
-        spring.json.trusted.packages: "*"
-        spring.json.use.type.headers: false
-
-  server:
-    port: ${SERVER_PORT}
+  config:
+    import: configserver:http://localhost:5555/
+#  mail:
+#    host: smtp.gmail.com
+#    port: 587
+#    username: ${SPRING_MAIL_USERNAME}
+#    password: ${SPRING_MAIL_PASSWORD}
+#    properties:
+#      mail.smtp.auth: true
+#      mail.smtp.starttls.enable: true
+#      mail.smtp.starttls.required: true
+#      mail.smtp.ssl.trust: smtp.gmail.com
+#    default-encoding: UTF-8
+#
+#  kafka:
+#    consumer:
+#      bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
+#      group-id: email-service
+#      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+#      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+#      properties:
+#        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+#        spring.json.value.default.type: com.ofss.NotificationService.dto.EmailEventDTO
+#        spring.json.trusted.packages: "*"
+#        spring.json.use.type.headers: false
+#
+#  server:
+#    port: ${SERVER_PORT}

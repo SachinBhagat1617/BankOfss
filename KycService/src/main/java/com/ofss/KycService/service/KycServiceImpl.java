@@ -262,6 +262,19 @@ public class KycServiceImpl implements KycService {
         return "KYC Document for Customer ID: " + id + " has been deleted successfully.";
     }
 
+    @Override
+    public ResponseEntity<ResponseDTO> userViewKycStatus(Long id) {
+        KycDoc doc = kycRepository.findByCustomerId(id)
+                .orElseThrow(() -> new ResourceNotFoundException("KYC Document", "Customer ID", id.toString()));
+
+        return ResponseEntity.ok(ResponseDTO.builder()
+                .success(true)
+                .statusCode(HttpStatus.OK.value())
+                .message("KYC status fetched successfully")
+                .data(doc.getStatus())
+                .build());
+    }
+
     private CustomerData getCustomer(Long id) {
         try {
             CustomerResponseDTO response = webClient.get()

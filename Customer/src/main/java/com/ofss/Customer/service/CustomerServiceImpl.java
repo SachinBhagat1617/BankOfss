@@ -6,13 +6,16 @@ import com.ofss.Customer.exception.ResourceNotFoundException;
 import com.ofss.Customer.model.Address;
 import com.ofss.Customer.model.Customer;
 import com.ofss.Customer.model.Role;
+import com.ofss.Customer.repository.AddressRepository;
 import com.ofss.Customer.repository.CustomerRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -23,22 +26,31 @@ import java.util.stream.Collectors;
 public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final AddressRepository addressRepository;
+    private final KafkaTemplate<String,KafkaDTO> closeAccountKafkaTemplate;
+    private final String AccountCloseTopic="AccountCloseTopic";
     @Override
     public ResponseEntity<ResponseDTO> createCustomer(CustomerRequestDTO customerRequestDTO) {
 
         if (customerRequestDTO.getEmail() == null ||
                 customerRequestDTO.getFirstName() == null ||
                 customerRequestDTO.getLastName() == null ||
-                customerRequestDTO.getUsername() == null) {
+                customerRequestDTO.getUsername() == null ||
+                customerRequestDTO.getAadhaarNumber() == null ||
+                customerRequestDTO.getPanNumber() == null) {
             throw new APIException("Missing required fields for creating customer", HttpStatus.BAD_REQUEST);
         }
-
+        Customer existingCustomer = customerRepository.findByEmail(customerRequestDTO.getEmail());
+        if(existingCustomer!=null && existingCustomer.isInActive()){
+            customerRepository.delete(existingCustomer);
+        }
         if (customerRepository.existsByEmail(customerRequestDTO.getEmail())) {
             throw new APIException("Email already exists", HttpStatus.BAD_REQUEST);
         }
         if (customerRepository.existsByUsername(customerRequestDTO.getUsername())) {
             throw new APIException("Username already exists", HttpStatus.BAD_REQUEST);
         }
+
         if (customerRequestDTO.getAddress() != null) {
             AddressRequestDTO addr = customerRequestDTO.getAddress();
             if (addr.getCity() == null || addr.getState() == null || addr.getCountry() == null ||
@@ -46,7 +58,6 @@ public class CustomerServiceImpl implements CustomerService {
                 throw new APIException("Address must have city, state, country, pincode, and street", HttpStatus.BAD_REQUEST);
             }
         }
-
         // Build the customer object
         Customer customer = Customer.builder()
                 .firstName(customerRequestDTO.getFirstName())
@@ -56,6 +67,9 @@ public class CustomerServiceImpl implements CustomerService {
                 .phone(customerRequestDTO.getPhone())
                 .username(customerRequestDTO.getUsername())
                 .dateOfBirth(customerRequestDTO.getDateOfBirth())
+                .aadhaarNumber(customerRequestDTO.getAadhaarNumber())
+                .panNumber(customerRequestDTO.getPanNumber())
+                .inActive(false)
                 .address(customerRequestDTO.getAddress() != null ?
                         Address.builder()
                                 .city(customerRequestDTO.getAddress().getCity())
@@ -64,6 +78,8 @@ public class CustomerServiceImpl implements CustomerService {
                                 .pincode(customerRequestDTO.getAddress().getPincode())
                                 .street(customerRequestDTO.getAddress().getStreet())
                                 .build() : null)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
 
         Customer savedCustomer = customerRepository.save(customer);
@@ -108,7 +124,14 @@ public class CustomerServiceImpl implements CustomerService {
             existingCustomer.setDateOfBirth(customerRequestDTO.getDateOfBirth());
             updated = true;
         }
-
+        if(customerRequestDTO.getAadhaarNumber()!=null){
+            existingCustomer.setAadhaarNumber(customerRequestDTO.getAadhaarNumber());
+            updated=true;
+        }
+        if(customerRequestDTO.getPanNumber()!=null){
+            existingCustomer.setPanNumber(customerRequestDTO.getPanNumber());
+            updated=true;
+        }
         if (customerRequestDTO.getAddress() != null) {
             Address address = existingCustomer.getAddress();
             if (address == null) address = new Address();
@@ -136,15 +159,17 @@ public class CustomerServiceImpl implements CustomerService {
                 addressUpdated = true;
             }
 
+
             if (addressUpdated) {
                 existingCustomer.setAddress(address);
                 updated = true;
             }
         }
-
         // If nothing was updated, throw an error
         if (!updated) {
             throw new APIException("No valid fields found to update", HttpStatus.BAD_REQUEST);
+        }else{
+            existingCustomer.setUpdatedAt(LocalDateTime.now());
         }
 
         Customer updatedCustomer = customerRepository.save(existingCustomer);
@@ -161,18 +186,45 @@ public class CustomerServiceImpl implements CustomerService {
     @Transactional
     @Override
     public ResponseEntity<ResponseDTO> deleteCustomer(Long id) {
+        // Fetch existing customer
         Optional<Customer> existingCustomerOpt = customerRepository.findById(id);
         if (existingCustomerOpt.isEmpty()) {
             throw new ResourceNotFoundException("Customer", "id", id);
         }
+        if(existingCustomerOpt.get().isInActive()){
+            throw new APIException("Customer already deleted with id: " + id, HttpStatus.BAD_REQUEST);
+        }
 
-        customerRepository.deleteById(id);
+        Customer customer = existingCustomerOpt.get();
 
-        return ResponseEntity.ok(ResponseDTO.builder()
-                .success(true)
-                .statusCode(HttpStatus.OK.value())
-                .message("Customer deleted successfully")
-                .build());
+        // Soft delete the customer in DB
+        customerRepository.softDeleteById(id);
+
+        // Build KafkaCustomerDTO for account closure
+        KafkaDTO kafkaCustomerDTO = KafkaDTO.builder()
+                .customerData(
+                        CustomerData.builder()
+                                .customerId(String.valueOf(customer.getId()))
+                                .firstName(customer.getFirstName())
+                                .lastName(customer.getLastName())
+                                .email(customer.getEmail())
+                                .username(customer.getUsername())
+                                .phone(customer.getPhone())
+                                .build()
+                )
+                .message("CLOSED") // Optional field to indicate closure
+                .build();
+
+        // Send to AccountCloseTopic
+        closeAccountKafkaTemplate.send(AccountCloseTopic, kafkaCustomerDTO);
+
+        return ResponseEntity.ok(
+                ResponseDTO.builder()
+                        .success(true)
+                        .statusCode(HttpStatus.OK.value())
+                        .message("Customer deleted successfully and account closure initiated")
+                        .build()
+        );
     }
 
 
