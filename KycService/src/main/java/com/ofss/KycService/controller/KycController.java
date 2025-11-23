@@ -380,4 +380,13 @@ public class KycController {
         return kycService.userViewKycStatus(id);
     }
 
+    @GetMapping
+    @Operation(
+            summary = "Get all KYC records",
+            description = "Allows an admin to retrieve all KYC records in the system."
+    )
+    public ResponseEntity<ResponseDTO> getAllKycRecords(@RequestHeader ("X-User-Id") Long adminId) {
+        return kycService.getAllKycRecords(adminId);
+    }
+
 }

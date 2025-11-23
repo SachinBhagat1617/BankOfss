@@ -21,6 +21,7 @@ public class CustomerRequestDTO {
     @Pattern(regexp = "^[A-Za-z]+$", message = "First name must contain only letters")
     private String firstName;
 
+
     @NotBlank(message = "Last name is required")
     @Pattern(regexp = "^[A-Za-z]+$", message = "Last name must contain only letters")
     private String lastName;
@@ -34,6 +35,9 @@ public class CustomerRequestDTO {
     @NotBlank(message = "Email is required")
     @Email(message = "Invalid email format")
     private String email;
+
+    @NotNull
+    private String password;
 
     @NotBlank(message = "Phone number is required")
     @Pattern(regexp = "^\\+?[0-9]{10,15}$", message = "Invalid phone number format")

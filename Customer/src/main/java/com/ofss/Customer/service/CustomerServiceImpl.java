@@ -24,11 +24,12 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class CustomerServiceImpl implements CustomerService {
-
+    private final KeyCloakAdminService keyCloakAdminService;
     private final CustomerRepository customerRepository;
     private final AddressRepository addressRepository;
     private final KafkaTemplate<String,KafkaDTO> closeAccountKafkaTemplate;
     private final String AccountCloseTopic="AccountCloseTopic";
+
     @Override
     public ResponseEntity<ResponseDTO> createCustomer(CustomerRequestDTO customerRequestDTO) {
 
@@ -40,6 +41,13 @@ public class CustomerServiceImpl implements CustomerService {
                 customerRequestDTO.getPanNumber() == null) {
             throw new APIException("Missing required fields for creating customer", HttpStatus.BAD_REQUEST);
         }
+        String token= keyCloakAdminService.getAdminAccessToken();
+        String keyCloakId= keyCloakAdminService.createUser(token,customerRequestDTO);
+        if(keyCloakId==null){
+            throw new APIException("Error creating user in Keycloak", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        keyCloakAdminService.assignClientRoleToUser(customerRequestDTO.getFirstName(),String.valueOf(Role.USER),keyCloakId);
+
         Customer existingCustomer = customerRepository.findByEmail(customerRequestDTO.getEmail());
         if(existingCustomer!=null && existingCustomer.isInActive()){
             customerRepository.delete(existingCustomer);
@@ -69,6 +77,7 @@ public class CustomerServiceImpl implements CustomerService {
                 .dateOfBirth(customerRequestDTO.getDateOfBirth())
                 .aadhaarNumber(customerRequestDTO.getAadhaarNumber())
                 .panNumber(customerRequestDTO.getPanNumber())
+                .KeycloakId(keyCloakId)
                 .inActive(false)
                 .address(customerRequestDTO.getAddress() != null ?
                         Address.builder()
@@ -232,10 +241,13 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public ResponseEntity<ResponseDTO> getCustomerById(Long id) {
         Optional<Customer> customerOpt = customerRepository.findById(id);
+
         if (customerOpt.isEmpty()) {
             throw new ResourceNotFoundException("Customer", "id", id);
         }
-
+        if(customerOpt.get().isInActive()){
+            throw new ResourceNotFoundException("Customer", "id", id);
+        }
         return ResponseEntity.ok(ResponseDTO.builder()
                 .success(true)
                 .statusCode(HttpStatus.OK.value())
@@ -246,7 +258,15 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public ResponseEntity<ResponseDTO> getAllCustomers() {
+//        Optional<Customer> adminCustomer = customerRepository.findById(adminId);
+//        if (adminCustomer.isEmpty()) {
+//            throw new ResourceNotFoundException("Customer", "id", adminId);
+//        }
+//        if(adminCustomer.get().getRole() != Role.ADMIN){
+//            throw new APIException("Only ADMIN users can view all customers", HttpStatus.FORBIDDEN);
+//        }
         List<Customer> customers = customerRepository.findAll();
+        System.out.println(customers);
 
         if (customers.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -303,10 +323,26 @@ public class CustomerServiceImpl implements CustomerService {
                 .build());
     }
 
+    @Override
+    public ResponseEntity<ResponseDTO> getCustomerByEmail(String email) {
+        Customer customer = customerRepository.findByEmail(email);
+        if (customer == null) {
+            throw new APIException("Customer not found with email: " + email, HttpStatus.NOT_FOUND);
+        }
+
+        return ResponseEntity.ok(ResponseDTO.builder()
+                .success(true)
+                .statusCode(HttpStatus.OK.value())
+                .message("Customer retrieved successfully")
+                .data(getCustomerResponseDTO(customer))
+                .build());
+    }
+
 
     private CustomerResponseDTO getCustomerResponseDTO(Customer customer) {
         Address address = customer.getAddress();
         return CustomerResponseDTO.builder()
+                .id(customer.getId())
                 .firstName(customer.getFirstName())
                 .lastName(customer.getLastName())
                 .username(customer.getUsername())
@@ -323,5 +359,4 @@ public class CustomerServiceImpl implements CustomerService {
                         .build())
                 .build();
     }
-
 }

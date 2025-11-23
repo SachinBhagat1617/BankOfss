@@ -10,4 +10,6 @@ public interface KycService {
     ResponseEntity<ResponseDTO> updateKYC(KycRequestDTO requestDTO, Long id);
     String deleteKyc(Long id, Long verifierId);
     ResponseEntity<ResponseDTO> userViewKycStatus(Long id);
+
+    ResponseEntity<ResponseDTO> getAllKycRecords(Long adminId);
 }

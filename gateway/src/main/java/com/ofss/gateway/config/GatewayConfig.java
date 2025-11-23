@@ -13,7 +13,7 @@ public class GatewayConfig {
                         .path("/accounts/**")
                         .uri("lb://ACCOUNT"))
                 .route("CUSTOMER",r->r
-                        .path("/customers/**")
+                        .path("/admin/customers/**","/public/customers/**","/auth/customers/**")
                         .uri("lb://CUSTOMER")
                 )
                 .route("KYCSERVICE",r->r

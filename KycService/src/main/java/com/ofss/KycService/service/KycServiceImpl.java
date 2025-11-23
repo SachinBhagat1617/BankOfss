@@ -275,6 +275,24 @@ public class KycServiceImpl implements KycService {
                 .build());
     }
 
+    @Override
+    public ResponseEntity<ResponseDTO> getAllKycRecords(Long adminId) {
+        CustomerData admin = getCustomer(adminId);
+        if (admin == null) {
+            throw new APIException("Admin not found with ID: " + adminId, HttpStatus.NOT_FOUND);
+        }
+        if (admin.getRole() != null && Role.valueOf(admin.getRole()) == Role.USER) {
+            throw new APIException("Access Denied: Only ADMIN can view all KYC records.", HttpStatus.FORBIDDEN);
+        }
+
+        return ResponseEntity.ok(ResponseDTO.builder()
+                .success(true)
+                .statusCode(HttpStatus.OK.value())
+                .message("KYC records fetched successfully")
+                .data(kycRepository.findAll())
+                .build());
+    }
+
     private CustomerData getCustomer(Long id) {
         try {
             CustomerResponseDTO response = webClient.get()

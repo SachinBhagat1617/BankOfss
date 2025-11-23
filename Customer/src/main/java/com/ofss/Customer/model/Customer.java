@@ -23,6 +23,8 @@ public class Customer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String KeycloakId;
+
     @Column(name = "first_name", nullable = false)
     private String firstName;
 
