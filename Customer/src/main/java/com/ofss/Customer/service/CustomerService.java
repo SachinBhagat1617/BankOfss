@@ -17,7 +17,7 @@ public interface CustomerService {
 
     ResponseEntity<ResponseDTO> getAllCustomers();
 
-    ResponseEntity<ResponseDTO> updateCustomerRole(Long userId, String role, Long adminId);
+    ResponseEntity<ResponseDTO> updateCustomerRole(Long userId, String role);
 
     ResponseEntity<ResponseDTO> getCustomerByEmail(String email);
 }

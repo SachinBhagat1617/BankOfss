@@ -292,15 +292,7 @@ public class CustomerServiceImpl implements CustomerService {
 
 
     @Override
-    public ResponseEntity<ResponseDTO> updateCustomerRole(Long userId, String role, Long adminId) {
-        Optional<Customer> adminCustomer = customerRepository.findById(adminId);
-        if (adminCustomer.isEmpty()) {
-            throw new ResourceNotFoundException("Customer", "id", adminId);
-        }
-
-        if (adminCustomer.get().getRole() != Role.ADMIN) {
-            throw new APIException("Only ADMIN users can update roles", HttpStatus.FORBIDDEN);
-        }
+    public ResponseEntity<ResponseDTO> updateCustomerRole(Long userId, String role) {
 
         Optional<Customer> customerOpt = customerRepository.findById(userId);
         if (customerOpt.isEmpty()) {
@@ -308,6 +300,9 @@ public class CustomerServiceImpl implements CustomerService {
         }
 
         Customer customer = customerOpt.get();
+        String keyCloakId= customer.getKeycloakId();
+        String username=customer.getUsername();
+        keyCloakAdminService.assignClientRoleToUser(username,role.toUpperCase(),keyCloakId);
         try {
             customer.setRole(Role.valueOf(role.toUpperCase()));
         } catch (IllegalArgumentException e) {

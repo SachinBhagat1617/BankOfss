@@ -19,7 +19,6 @@ public class CookieServerBearerTokenConverter extends ServerBearerTokenAuthentic
                                     .header("Authorization", "Bearer " + token)
                                     .build())
                             .build();
-
                     // Parent class ko modified exchange pass karo
                     return super.convert(modifiedExchange);
                 })

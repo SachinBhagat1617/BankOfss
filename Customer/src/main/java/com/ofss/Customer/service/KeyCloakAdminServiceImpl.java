@@ -170,4 +170,5 @@ public class KeyCloakAdminServiceImpl implements KeyCloakAdminService{
         cookie.setMaxAge(0);
         response.addCookie(cookie);
     }
+
 }

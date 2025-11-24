@@ -47,9 +47,8 @@ public class CustomerController {
     }
     @PutMapping("/admin/customers/id/{userId}")
     public ResponseEntity<ResponseDTO> updateRole(@PathVariable Long userId,
-                                                  @RequestParam String role,
-                                                  @RequestHeader("X-User-Id") Long adminId) {
-        return customerService.updateCustomerRole(userId,role,adminId);
+                                                  @RequestParam String role){
+        return customerService.updateCustomerRole(userId,role);
     }
 
     @PostMapping("/auth/login")

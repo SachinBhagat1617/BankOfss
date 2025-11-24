@@ -29,7 +29,8 @@ public class SecurityConfig {
                 .authorizeExchange(exchange->exchange
                         .pathMatchers("/auth/**").permitAll()
                         .pathMatchers("/admin/**").hasRole("ADMIN")
-                        .pathMatchers("/public/**").hasAnyRole("USER","ADMIN")
+                        .pathMatchers("/verifier/**").hasAnyRole("ADMIN","VERIFIER")
+                        .pathMatchers("/public/**").hasAnyRole("USER","ADMIN","VERIFIER")
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2->
